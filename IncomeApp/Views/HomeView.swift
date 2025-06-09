@@ -11,6 +11,18 @@ struct HomeView: View {
     @State private var transactions: [TransactionModel] = []
     @State private var showEditTransactionView = false
     @State private var transactionToEdit: TransactionModel?
+    @State private var showSettings = false
+    
+    @AppStorage("isOrderDesc") var orderDescending = false
+    @AppStorage("currency") var currency : Currency = .idr
+    @AppStorage("filterMinimum") var filterMinimum : Double = 0.0
+    
+    private var displayTransactions: [TransactionModel] {
+        let sortedTransactions = orderDescending ? transactions.sorted(by: {
+            $0.date < $1.date }) : transactions.sorted(by: { $0.date > $1.date })
+        let filterTransaction = sortedTransactions.filter( {$0.amount > filterMinimum} )
+        return filterTransaction
+    }
     
     private var expenses: String{
         let sumExpense = transactions.filter(
@@ -18,6 +30,7 @@ struct HomeView: View {
         )
         let numberFormatter = NumberFormatter()
         numberFormatter.numberStyle = .currency
+        numberFormatter.locale = currency.locale
         
         return numberFormatter.string(from: sumExpense as NSNumber) ?? "RP 0.00"
     }
@@ -28,6 +41,7 @@ struct HomeView: View {
         )
         let numberFormatter = NumberFormatter()
         numberFormatter.numberStyle = .currency
+        numberFormatter.locale = currency.locale
         
         return numberFormatter.string(from: sumIncome as NSNumber) ?? "RP.00"
     }
@@ -39,10 +53,13 @@ struct HomeView: View {
         let sumIncome = transactions.filter(
             { $0.type == .income }).reduce(0, { $0 + $1.amount }
         )
-        let total = sumIncome - sumExpense
         
+        let total = sumIncome - sumExpense
         let numberFormatter = NumberFormatter()
+        
         numberFormatter.numberStyle = .currency
+        numberFormatter.locale = currency.locale
+        
         return numberFormatter.string(from: total as NSNumber) ?? "RP.00"
     }
     
@@ -114,7 +131,7 @@ struct HomeView: View {
                 VStack {
                     BalanceView()
                     List{
-                        ForEach(transactions) { transaction in
+                        ForEach(displayTransactions) { transaction in
                             Button {
                                 transactionToEdit = transaction
                             } label: {
@@ -134,9 +151,13 @@ struct HomeView: View {
             .navigationDestination(isPresented: $showEditTransactionView, destination: {
                 AddTransactionView(transactions: $transactions)
             })
+            .sheet(isPresented: $showSettings, content: {
+                SettingView()
+            })
             .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button {
+                        showSettings = true
                     } label: {
                         Image(systemName: "gearshape.fill")
                             .foregroundStyle(.black)

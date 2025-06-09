@@ -17,10 +17,12 @@ struct AddTransactionView: View {
     @Binding var transactions : [TransactionModel]
     var transactionToEdit: TransactionModel?
     @Environment(\.dismiss) var dismiss
+    @AppStorage("currency") var currency : Currency = .idr
     
     var numberFormatter: NumberFormatter {
         let numberFormatter = NumberFormatter()
         numberFormatter.numberStyle = .currency
+        numberFormatter.locale = currency.locale
         return numberFormatter
     }
     
